@@ -1,0 +1,75 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+    
+    steps:
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          build-essential \
+          debhelper \
+          dh-python \
+          devscripts \
+          fakeroot \
+          python3-all \
+          python3-setuptools \
+          python3-pip \
+          git \
+          lintian \
+          i2c-tools \
+          python3-smbus
+
+
+    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set version if tag
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        VERSION=$(echo ${{ github.ref }} | cut -d/ -f3 | sed 's/^v//')
+        echo "Building tagged version: $VERSION"
+        echo "PKG_VERSION=$VERSION" >> $GITHUB_ENV
+    
+    - name: Build Debian package
+      run: |
+        # Build the Debian package
+        dpkg-buildpackage -b
+        
+        # Move the .deb files to a artifacts directory
+        mkdir -p artifacts
+        cp ../openplotter-i2c_*.deb artifacts/
+        cp ../openplotter-i2c_*.buildinfo artifacts/ || true
+        cp ../openplotter-i2c_*.changes artifacts/ || true
+        
+        # Run lintian to check package quality
+        lintian ../openplotter-i2c_*.deb || true
+    
+    - name: Upload Debian package
+      uses: actions/upload-artifact@v4
+      with:
+        name: debian-packages
+        path: artifacts/
+    
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/openplotter-i2c_*.deb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
