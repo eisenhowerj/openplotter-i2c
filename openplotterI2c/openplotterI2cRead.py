@@ -151,6 +151,33 @@ def main():
 						instances[-1]['object'].pressure_oversampling = pressure_oversampling
 						instances[-1]['object'].temperature_oversampling = temperature_oversampling
 
+					elif i2c_sensors[i]['type'] == 'BMP581':
+						import bmp581
+						if i2c_sensors[i]['channel'] == 0:
+							if i2c_sensors[i]['address']:
+								instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581.BMP581_I2C(i2c, address=int(i2c_sensors[i]['address'], 16))})
+						else:
+							if i2c_sensors[i]['address']:
+								instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581.BMP581_I2C(muxInstances[i2c_sensors[i]['address']][i2c_sensors[i]['channel']-1])})
+						# Configure default settings
+						osr_t = 2  # temperature oversampling
+						osr_p = 8  # pressure oversampling
+						odr = 50   # output data rate in Hz
+						if 'sensorSettings' in instances[-1]['sensor']:
+							if 'temperature_oversampling' in instances[-1]['sensor']['sensorSettings']:
+								try: osr_t = int(instances[-1]['sensor']['sensorSettings']['temperature_oversampling'])
+								except: pass
+							if 'pressure_oversampling' in instances[-1]['sensor']['sensorSettings']:
+								try: osr_p = int(instances[-1]['sensor']['sensorSettings']['pressure_oversampling'])
+								except: pass
+							if 'output_data_rate' in instances[-1]['sensor']['sensorSettings']:
+								try: odr = int(instances[-1]['sensor']['sensorSettings']['output_data_rate'])
+								except: pass
+						instances[-1]['object'].set_iir_filter(bmp581.IIRFilter.COEF_15)
+						instances[-1]['object'].set_oversampling(temp_osr=osr_t, press_osr=osr_p)
+						instances[-1]['object'].set_output_data_rate(odr)
+						instances[-1]['object'].set_power_mode(bmp581.PowerMode.NORMAL)
+
 					elif i2c_sensors[i]['type'] == 'HTU21D':
 						from adafruit_htu21d import HTU21D
 						if i2c_sensors[i]['channel'] == 0:
@@ -483,6 +510,37 @@ def main():
 											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
 											instances[index]['tick'][1] = time.time()
 
+								elif i['type'] == 'BMP581':
+									pressureKey = i['sensor']['data'][0]['SKkey']
+									temperatureKey = i['sensor']['data'][1]['SKkey']
+									if pressureKey:
+										pressureRaw = i['sensor']['data'][0]['raw']
+										pressureRate = i['sensor']['data'][0]['rate']
+										pressureOffset = i['sensor']['data'][0]['offset']
+										pressureFactor = i['sensor']['data'][0]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][0] > pressureRate:
+											# BMP581 returns pressure in Pascals - we convert to hPa/mbar
+											try: pressureValue = round(i['object'].pressure / 100.0, 2)
+											except: pressureValue = i['object'].pressure / 100.0
+											try: pressureValue2 = float(pressureValue) * 100
+											except: pressureValue2 = ''
+											Erg = getPaths(Erg,pressureValue,pressureValue2,pressureKey,pressureOffset,pressureFactor,pressureRaw)
+											instances[index]['tick'][0] = time.time()
+									if temperatureKey:
+										temperatureRaw = i['sensor']['data'][1]['raw']
+										temperatureRate = i['sensor']['data'][1]['rate']
+										temperatureOffset = i['sensor']['data'][1]['offset']
+										temperatureFactor = i['sensor']['data'][1]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][1] > temperatureRate:
+											try: temperatureValue = round(i['object'].temperature, 1)
+											except: temperatureValue = i['object'].temperature
+											try: temperatureValue2 = float(temperatureValue) + 273.15
+											except: temperatureValue2 = ''
+											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
+											instances[index]['tick'][1] = time.time()
+
 								elif i['type'] == 'HTU21D':
 									humidityKey = i['sensor']['data'][0]['SKkey']
 									temperatureKey = i['sensor']['data'][1]['SKkey']
@@ -751,4 +809,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-	
