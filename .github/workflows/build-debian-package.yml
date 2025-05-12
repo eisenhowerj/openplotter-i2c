@@ -20,8 +20,10 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           build-essential \
+          dh-python \
           lintian \
           i2c-tools \
+          python3-all \
           python3-pip \
           python3-smbus
 
