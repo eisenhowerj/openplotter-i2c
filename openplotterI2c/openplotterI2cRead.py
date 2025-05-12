@@ -152,7 +152,7 @@ def main():
 						instances[-1]['object'].temperature_oversampling = temperature_oversampling
 
 					elif i2c_sensors[i]['type'] == 'BMP581':
-						from qwiic_bmp581 import qwiic_bmp581
+						import qwiic_bmp581
 						if i2c_sensors[i]['channel'] == 0:
 							if i2c_sensors[i]['address']:
 								# Initialize BMP581 sensor
