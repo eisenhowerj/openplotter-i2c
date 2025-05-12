@@ -509,7 +509,7 @@ def main():
 											except: temperatureValue2 = ''
 											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
 											instances[index]['tick'][1] = time.time()
-
+								
 								elif i['type'] == 'BMP581':
 									pressureKey = i['sensor']['data'][0]['SKkey']
 									temperatureKey = i['sensor']['data'][1]['SKkey']
@@ -520,12 +520,16 @@ def main():
 										pressureFactor = i['sensor']['data'][0]['factor']
 										tick0 = time.time()
 										if tick0 - i['tick'][0] > pressureRate:
-											# BMP581 returns pressure in Pascals - we convert to hPa/mbar
-											try: pressureValue = round(i['object'].pressure / 100.0, 2)
-											except: pressureValue = i['object'].pressure / 100.0
-											try: pressureValue2 = float(pressureValue) * 100
-											except: pressureValue2 = ''
-											Erg = getPaths(Erg,pressureValue,pressureValue2,pressureKey,pressureOffset,pressureFactor,pressureRaw)
+											# BMP581 returns pressure in Pascals - we need to convert to hPa/mbar
+											try: 
+												pressureValue = round(i['object'].pressure / 100.0, 2)
+											except: 
+												pressureValue = i['object'].pressure / 100.0
+											try: 
+												pressureValue2 = float(pressureValue) * 100  # Convert to Pa for Signal K
+											except: 
+												pressureValue2 = ''
+											Erg = getPaths(Erg, pressureValue, pressureValue2, pressureKey, pressureOffset, pressureFactor, pressureRaw)
 											instances[index]['tick'][0] = time.time()
 									if temperatureKey:
 										temperatureRaw = i['sensor']['data'][1]['raw']
@@ -534,11 +538,15 @@ def main():
 										temperatureFactor = i['sensor']['data'][1]['factor']
 										tick0 = time.time()
 										if tick0 - i['tick'][1] > temperatureRate:
-											try: temperatureValue = round(i['object'].temperature, 1)
-											except: temperatureValue = i['object'].temperature
-											try: temperatureValue2 = float(temperatureValue) + 273.15
-											except: temperatureValue2 = ''
-											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
+											try:
+												temperatureValue = round(i['object'].temperature, 1)
+											except:
+												temperatureValue = i['object'].temperature
+											try:
+												temperatureValue2 = float(temperatureValue) + 273.15  # Convert to Kelvin
+											except:
+												temperatureValue2 = ''
+											Erg = getPaths(Erg, temperatureValue, temperatureValue2, temperatureKey, temperatureOffset, temperatureFactor, temperatureRaw)
 											instances[index]['tick'][1] = time.time()
 
 								elif i['type'] == 'HTU21D':

@@ -388,7 +388,7 @@ class addI2c(wx.Dialog):
 		title = _('Add I2C sensor')
 
 		wx.Dialog.__init__(self, None, title=title, size=(690,400))
-		self.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE.NORMAL, wx.FONTWEIGHT_NORMAL))
+		self.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
 		panel = wx.Panel(self)
 
 		sensorLabel = wx.StaticText(panel, label=_('Supported sensors'))
