@@ -156,7 +156,7 @@ def main():
 						if i2c_sensors[i]['channel'] == 0:
 							if i2c_sensors[i]['address']:
 								# Initialize BMP581 sensor
-								bmp581 = qwiic_bmp581.QwiicBmp581(address=int(i2c_sensors[i]['address'], 16))
+								bmp581 = qwiic_bmp581.QwiicBMP581(address=int(i2c_sensors[i]['address'], 16))
 								if bmp581.connected:
 									bmp581.begin()
 									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
@@ -164,7 +164,7 @@ def main():
 							if i2c_sensors[i]['address'] and 'multiplexing' in i2c_sensors[i]:
 								# Note: Sparkfun's library doesn't directly support multiplexers
 								# This implementation assumes the multiplexer has been properly configured elsewhere
-								bmp581 = qwiic_bmp581.QwiicBmp581(address=int(i2c_sensors[i]['address'], 16))
+								bmp581 = qwiic_bmp581.QwiicBMP581(address=int(i2c_sensors[i]['address'], 16))
 								if bmp581.connected:
 									bmp581.begin()
 									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
