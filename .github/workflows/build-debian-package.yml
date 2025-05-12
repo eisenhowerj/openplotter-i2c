@@ -19,17 +19,9 @@ jobs:
       run: |
         apt-get update
         apt-get install -y --no-install-recommends \
-          # build-essential \
-          # debhelper \
-          # dh-python \
-          # devscripts \
-          # fakeroot \
-          # python3-all \
-          # python3-setuptools \
-          python3-pip \
-          git \
           lintian \
           i2c-tools \
+          python3-pip \
           python3-smbus
 
 
