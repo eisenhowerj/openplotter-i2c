@@ -151,6 +151,40 @@ def main():
 						instances[-1]['object'].pressure_oversampling = pressure_oversampling
 						instances[-1]['object'].temperature_oversampling = temperature_oversampling
 
+					elif i2c_sensors[i]['type'] == 'BMP581':
+						from qwiic_bmp581 import qwiic_bmp581
+						if i2c_sensors[i]['channel'] == 0:
+							if i2c_sensors[i]['address']:
+								# Initialize BMP581 sensor
+								bmp581 = qwiic_bmp581.QwiicBmp581(address=int(i2c_sensors[i]['address'], 16))
+								if bmp581.connected:
+									bmp581.begin()
+									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
+						else:
+							if i2c_sensors[i]['address'] and 'multiplexing' in i2c_sensors[i]:
+								# Note: Sparkfun's library doesn't directly support multiplexers
+								# This implementation assumes the multiplexer has been properly configured elsewhere
+								bmp581 = qwiic_bmp581.QwiicBmp581(address=int(i2c_sensors[i]['address'], 16))
+								if bmp581.connected:
+									bmp581.begin()
+									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
+						
+						# Handle sensor settings if the sensor was successfully connected
+						if instances and instances[-1]['type'] == 'BMP581':
+							pressure_oversampling = 4
+							temperature_oversampling = 2
+							if 'sensorSettings' in instances[-1]['sensor']:
+								if 'pressure_oversampling' in instances[-1]['sensor']['sensorSettings']:
+									try: pressure_oversampling = int(instances[-1]['sensor']['sensorSettings']['pressure_oversampling'])
+									except: pass
+								if 'temperature_oversampling' in instances[-1]['sensor']['sensorSettings']:
+									try: temperature_oversampling = int(instances[-1]['sensor']['sensorSettings']['temperature_oversampling'])
+									except: pass
+							# BMP581 uses different API for setting oversampling
+							instances[-1]['object'].set_oversampling_pressure(pressure_oversampling)
+							instances[-1]['object'].set_oversampling_temperature(temperature_oversampling)
+							instances[-1]['object'].set_iir_filter(3)  # Default mid-range filter setting
+
 					elif i2c_sensors[i]['type'] == 'HTU21D':
 						from adafruit_htu21d import HTU21D
 						if i2c_sensors[i]['channel'] == 0:
@@ -483,6 +517,43 @@ def main():
 											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
 											instances[index]['tick'][1] = time.time()
 
+								elif i['type'] == 'BMP581':
+									pressureKey = i['sensor']['data'][0]['SKkey']
+									temperatureKey = i['sensor']['data'][1]['SKkey']
+									if pressureKey:
+										pressureRaw = i['sensor']['data'][0]['raw']
+										pressureRate = i['sensor']['data'][0]['rate']
+										pressureOffset = i['sensor']['data'][0]['offset']
+										pressureFactor = i['sensor']['data'][0]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][0] > pressureRate:
+											# BMP581 gives pressure in Pascal, convert to hPa (divide by 100)
+											try: 
+												i['object'].get_sensor_data()  # Trigger a reading
+												pressureValue = round(i['object'].pressure_pa / 100, 2)
+											except: 
+												pressureValue = i['object'].pressure_pa / 100
+											try: pressureValue2 = float(pressureValue)*100  # Convert back to Pa for SignalK
+											except: pressureValue2 = ''
+											Erg = getPaths(Erg,pressureValue,pressureValue2,pressureKey,pressureOffset,pressureFactor,pressureRaw)
+											instances[index]['tick'][0] = time.time()
+									if temperatureKey:
+										temperatureRaw = i['sensor']['data'][1]['raw']
+										temperatureRate = i['sensor']['data'][1]['rate']
+										temperatureOffset = i['sensor']['data'][1]['offset']
+										temperatureFactor = i['sensor']['data'][1]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][1] > temperatureRate:
+											try:
+												i['object'].get_sensor_data()  # Trigger a reading 
+												temperatureValue = round(i['object'].temperature_celsius, 1)
+											except: 
+												temperatureValue = i['object'].temperature_celsius
+											try: temperatureValue2 = float(temperatureValue)+273.15  # Convert to Kelvin for SignalK
+											except: temperatureValue2 = ''
+											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
+											instances[index]['tick'][1] = time.time()
+
 								elif i['type'] == 'HTU21D':
 									humidityKey = i['sensor']['data'][0]['SKkey']
 									temperatureKey = i['sensor']['data'][1]['SKkey']
@@ -751,4 +822,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-	
