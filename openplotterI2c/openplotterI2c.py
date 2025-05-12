@@ -489,7 +489,7 @@ class editI2c(wx.Dialog):
 		title = _('Edit')+(' '+name+' - '+magn)
 
 		wx.Dialog.__init__(self, None, title=title, size=(500, 365))
-		self.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE.NORMAL, wx.FONTWEIGHT_NORMAL))
+		self.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
 		panel = wx.Panel(self)
 
 		titl = wx.StaticText(panel, label=_('Signal K key'))
