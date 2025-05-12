@@ -20,6 +20,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           build-essential \
+          debhelper \
           dh-python \
           lintian \
           i2c-tools \
