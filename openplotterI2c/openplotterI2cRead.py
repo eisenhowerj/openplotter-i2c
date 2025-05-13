@@ -157,9 +157,10 @@ def main():
 							if i2c_sensors[i]['address']:
 								# Initialize BMP581 sensor
 								bmp581 = qwiic_bmp581.QwiicBMP581(address=int(i2c_sensors[i]['address'], 16))
-								if bmp581.connected:
-									bmp581.begin()
-									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
+								if bmp581.is_connected():
+									if bmp581.begin():
+										data = bmp581.get_sensor_data()
+										instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
 						else:
 							if i2c_sensors[i]['address'] and 'multiplexing' in i2c_sensors[i]:
 								# Note: Sparkfun's library doesn't directly support multiplexers
@@ -170,20 +171,20 @@ def main():
 									instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':bmp581})
 						
 						# Handle sensor settings if the sensor was successfully connected
-						if instances and instances[-1]['type'] == 'BMP581':
-							pressure_oversampling = 4
-							temperature_oversampling = 2
-							if 'sensorSettings' in instances[-1]['sensor']:
-								if 'pressure_oversampling' in instances[-1]['sensor']['sensorSettings']:
-									try: pressure_oversampling = int(instances[-1]['sensor']['sensorSettings']['pressure_oversampling'])
-									except: pass
-								if 'temperature_oversampling' in instances[-1]['sensor']['sensorSettings']:
-									try: temperature_oversampling = int(instances[-1]['sensor']['sensorSettings']['temperature_oversampling'])
-									except: pass
-							# BMP581 uses different API for setting oversampling
-							instances[-1]['object'].set_oversampling_pressure(pressure_oversampling)
-							instances[-1]['object'].set_oversampling_temperature(temperature_oversampling)
-							instances[-1]['object'].set_iir_filter(3)  # Default mid-range filter setting
+						# if instances and instances[-1]['type'] == 'BMP581':
+						# 	pressure_oversampling = 4
+						# 	temperature_oversampling = 2
+						# 	if 'sensorSettings' in instances[-1]['sensor']:
+						# 		if 'pressure_oversampling' in instances[-1]['sensor']['sensorSettings']:
+						# 			try: pressure_oversampling = int(instances[-1]['sensor']['sensorSettings']['pressure_oversampling'])
+						# 			except: pass
+						# 		if 'temperature_oversampling' in instances[-1]['sensor']['sensorSettings']:
+						# 			try: temperature_oversampling = int(instances[-1]['sensor']['sensorSettings']['temperature_oversampling'])
+						# 			except: pass
+						# 	# BMP581 uses different API for setting oversampling
+						# 	instances[-1]['object'].set_oversampling_pressure(pressure_oversampling)
+						# 	instances[-1]['object'].set_oversampling_temperature(temperature_oversampling)
+						# 	instances[-1]['object'].set_iir_filter(3)  # Default mid-range filter setting
 
 					elif i2c_sensors[i]['type'] == 'HTU21D':
 						from adafruit_htu21d import HTU21D
@@ -520,6 +521,7 @@ def main():
 								elif i['type'] == 'BMP581':
 									pressureKey = i['sensor']['data'][0]['SKkey']
 									temperatureKey = i['sensor']['data'][1]['SKkey']
+									
 									if pressureKey:
 										pressureRaw = i['sensor']['data'][0]['raw']
 										pressureRate = i['sensor']['data'][0]['rate']
@@ -529,10 +531,10 @@ def main():
 										if tick0 - i['tick'][0] > pressureRate:
 											# BMP581 gives pressure in Pascal, convert to hPa (divide by 100)
 											try: 
-												i['object'].get_sensor_data()  # Trigger a reading
-												pressureValue = round(i['object'].pressure_pa / 100, 2)
+												data = i['object'].get_sensor_data()  # Trigger a reading
+												pressureValue = round(data.pressure / 100, 2)
 											except: 
-												pressureValue = i['object'].pressure_pa / 100
+												pressureValue = i['object'].data.pressure / 100
 											try: pressureValue2 = float(pressureValue)*100  # Convert back to Pa for SignalK
 											except: pressureValue2 = ''
 											Erg = getPaths(Erg,pressureValue,pressureValue2,pressureKey,pressureOffset,pressureFactor,pressureRaw)
