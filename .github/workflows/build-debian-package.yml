@@ -1,4 +1,4 @@
-name: Build Debian Package
+name: debian-packages
 
 on:
   push:
@@ -22,29 +22,39 @@ jobs:
           build-essential \
           debhelper \
           dh-python \
-          devscripts \
-          fakeroot \
-          python3-all \
-          python3-setuptools \
-          python3-pip \
-          git \
           lintian \
           i2c-tools \
+          python3-all \
+          python3-pip \
           python3-smbus
-
-
     
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
-    - name: Set version if tag
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Set version and package name
       run: |
-        VERSION=$(echo ${{ github.ref }} | cut -d/ -f3 | sed 's/^v//')
-        echo "Building tagged version: $VERSION"
-        echo "PKG_VERSION=$VERSION" >> $GITHUB_ENV
+        if [[ "${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # Get version from the code
+          VERSION=$(grep -Po "version = '\K[^']+" openplotterI2c/version.py)
+          BUILD_TYPE="stable"
+          echo "Building stable version: $VERSION-$BUILD_TYPE"
+          echo "PKG_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "PKG_NAME=openplotter-i2c_${VERSION}-${BUILD_TYPE}_all.deb" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=$(echo ${{ github.ref }} | cut -d/ -f3 | sed 's/^v//')
+          BUILD_TYPE="stable"
+          echo "Building tagged version: $VERSION-$BUILD_TYPE"
+          echo "PKG_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "PKG_NAME=openplotter-i2c_${VERSION}-${BUILD_TYPE}_all.deb" >> $GITHUB_ENV
+        else
+          # For PR and other branches, use short commit hash
+          REF=$(echo "${{ github.ref }}" | sed -e "s#refs/[^/]*/##g" | sed -e "s#/#-#g")
+          echo "Building from ref: $REF"
+          echo "PKG_VERSION=$REF-build" >> $GITHUB_ENV
+          echo "PKG_NAME=openplotter-i2c_${REF}-build_all.deb" >> $GITHUB_ENV
+        fi
     
     - name: Build Debian package
       run: |
@@ -57,19 +67,39 @@ jobs:
         cp ../openplotter-i2c_*.buildinfo artifacts/ || true
         cp ../openplotter-i2c_*.changes artifacts/ || true
         
+        # Rename the package to follow the naming convention
+        if [[ -n "$PKG_NAME" ]]; then
+          cd artifacts
+          ORIG_DEB=$(ls openplotter-i2c_*.deb | head -1)
+          if [[ -n "$ORIG_DEB" && "$ORIG_DEB" != "$PKG_NAME" ]]; then
+            cp "$ORIG_DEB" "$PKG_NAME"
+            echo "Renamed package to $PKG_NAME"
+          fi
+          cd ..
+        fi
+        
         # Run lintian to check package quality
         lintian ../openplotter-i2c_*.deb || true
     
     - name: Upload Debian package
       uses: actions/upload-artifact@v4
       with:
-        name: debian-packages
+        name: openplotter-i2c-packages
         path: artifacts/
     
+    - name: Prepare release files
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        VERSION=$(echo ${{ github.ref }} | cut -d/ -f3 | sed 's/^v//')
+        echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+        mkdir -p release_files
+        cp artifacts/*.deb release_files/
+        
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: artifacts/openplotter-i2c_*.deb
+        files: release_files/*.deb
+        name: "OpenPlotter I2C v${{ env.RELEASE_VERSION }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

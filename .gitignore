@@ -6,3 +6,4 @@ debian/*.substvars
 .pybuild/
 */__pycache__/
 build/
+venv
