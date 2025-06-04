@@ -1,0 +1,45 @@
+name: debian-packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+    
+    steps:
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          build-essential \
+          debhelper \
+          dh-python \
+          i2c-tools \
+          python3-all \
+          python3-pip \
+          python3-smbus
+    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Build Debian package
+      run: |
+        # Build the Debian package
+        dpkg-buildpackage -b
+        
+        # Move the .deb files to a artifacts directory
+        mkdir -p artifacts
+        cp ../openplotter-i2c_*.deb artifacts/
+        
+    
+    - name: Upload Debian package
+      uses: actions/upload-artifact@v4
+      with:
+        name: openplotter-i2c
+        path: artifacts/
+    
