@@ -131,6 +131,13 @@ def main():
 							if i2c_sensors[i]['address']:
 								instances.append({'name':i,'type':'BMP280','tick':[now,now],'sensor':i2c_sensors[i],'object':adafruit_bmp280.Adafruit_BMP280_I2C(muxInstances[i2c_sensors[i]['address']][i2c_sensors[i]['channel']-1])})
 
+					elif i2c_sensors[i]['type'] == 'BMP581':
+						import qwiic_bmp581
+						sensor = qwiic_bmp581.QwiicBMP581()
+						sensor.begin()
+						if i2c_sensors[i]['channel'] == 0:
+                                                        instances.append({'name':i,'type':'BMP581-beta','tick':[now,now],'sensor':i2c_sensors[i],'object':sensor})
+
 					elif i2c_sensors[i]['type'] == 'BMP3XX':
 						import adafruit_bmp3xx
 						if i2c_sensors[i]['channel'] == 0:
@@ -482,6 +489,46 @@ def main():
 											except: temperatureValue2 = ''
 											Erg = getPaths(Erg,temperatureValue,temperatureValue2,temperatureKey,temperatureOffset,temperatureFactor,temperatureRaw)
 											instances[index]['tick'][1] = time.time()
+								
+								elif i['type'] == 'BMP581':
+									pressureKey = i['sensor']['data'][0]['SKkey']
+									temperatureKey = i['sensor']['data'][1]['SKkey']
+									if pressureKey:
+										pressureRaw = i['sensor']['data'][0]['raw']
+										pressureRate = i['sensor']['data'][0]['rate']
+										pressureOffset = i['sensor']['data'][0]['offset']
+										pressureFactor = i['sensor']['data'][0]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][0] > pressureRate:
+											# BMP581 returns pressure in Pascals - we need to convert to hPa/mbar
+											try: 
+												data = i['object'].get_sensor_data()  # Trigger a reading
+												pressureValue = round(data.pressure / 100.0, 2)
+											except: 
+												pressureValue = i['object'].data.pressure / 100.0
+											try: 
+												pressureValue2 = float(pressureValue) * 100  # Convert to Pa for Signal K
+											except: 
+												pressureValue2 = ''
+											Erg = getPaths(Erg, pressureValue, pressureValue2, pressureKey, pressureOffset, pressureFactor, pressureRaw)
+											instances[index]['tick'][0] = time.time()
+									if temperatureKey:
+										temperatureRaw = i['sensor']['data'][1]['raw']
+										temperatureRate = i['sensor']['data'][1]['rate']
+										temperatureOffset = i['sensor']['data'][1]['offset']
+										temperatureFactor = i['sensor']['data'][1]['factor']
+										tick0 = time.time()
+										if tick0 - i['tick'][1] > temperatureRate:
+											try:
+												temperatureValue = round(i['object'].temperature, 1)
+											except:
+												temperatureValue = i['object'].temperature
+											try:
+												temperatureValue2 = float(temperatureValue) + 273.15  # Convert to Kelvin
+											except:
+												temperatureValue2 = ''
+											Erg = getPaths(Erg, temperatureValue, temperatureValue2, temperatureKey, temperatureOffset, temperatureFactor, temperatureRaw)
+											instances[index]['tick'][1] = time.time()
 
 								elif i['type'] == 'HTU21D':
 									humidityKey = i['sensor']['data'][0]['SKkey']
@@ -751,4 +798,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-	
