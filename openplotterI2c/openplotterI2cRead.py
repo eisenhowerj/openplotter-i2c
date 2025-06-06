@@ -136,7 +136,7 @@ def main():
 						sensor = qwiic_bmp581.QwiicBMP581()
 						sensor.begin()
 						if i2c_sensors[i]['channel'] == 0:
-                                                        instances.append({'name':i,'type':'BMP581-beta','tick':[now,now],'sensor':i2c_sensors[i],'object':sensor})
+							instances.append({'name':i,'type':'BMP581','tick':[now,now],'sensor':i2c_sensors[i],'object':sensor})
 
 					elif i2c_sensors[i]['type'] == 'BMP3XX':
 						import adafruit_bmp3xx

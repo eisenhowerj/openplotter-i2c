@@ -1,8 +1,8 @@
-openplotter-i2c (4.2.2-stable) bookworm; urgency=medium
+openplotter-i2c (4.2.3-stable) bookworm; urgency=medium
 
-  * Add BMP581
+  * Patch version bump
 
- -- John Eisenhower <eisenhowerj@gmail.com>  Thu, 13 Jun 2024 19:13:29 +0200
+ -- John Eisenhower <eisenhowerj@gmail.com>  Thu, 06 Jun 2025 19:13:29 +0200
 
 openplotter-i2c (4.2.0-stable) bookworm; urgency=medium
 

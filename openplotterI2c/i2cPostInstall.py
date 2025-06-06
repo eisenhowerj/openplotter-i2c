@@ -28,14 +28,14 @@ def main():
 
 	print(_('Installing python packages...'))
 	try:
-		subprocess.call(['pip3', 'install', 'adafruit-blinka','adafruit-circuitpython-tca9548a','adafruit-circuitpython-bme680','adafruit-circuitpython-ads1x15', 'adafruit-circuitpython-htu21d', 'adafruit-circuitpython-bmp280', 'adafruit-circuitpython-bme280', 'adafruit-circuitpython-bmp3xx', 'adafruit-circuitpython-ina260', 'adafruit-circuitpython-ina219', 'adafruit-circuitpython-lps35hw', 'adafruit-circuitpython-bh1750','adafruit-circuitpython-ahtx0','sparkfun-qwiic-bmp581' '-U', '--break-system-packages'])
+		subprocess.call(['pip3', 'install', 'adafruit-blinka','adafruit-circuitpython-tca9548a','adafruit-circuitpython-bme680','adafruit-circuitpython-ads1x15', 'adafruit-circuitpython-htu21d', 'adafruit-circuitpython-bmp280', 'adafruit-circuitpython-bme280', 'adafruit-circuitpython-bmp3xx', 'adafruit-circuitpython-ina260', 'adafruit-circuitpython-ina219', 'adafruit-circuitpython-lps35hw', 'adafruit-circuitpython-bh1750','adafruit-circuitpython-ahtx0','sparkfun-qwiic-bmp581', '-U', '--break-system-packages'])
 		print(_('DONE'))
 	except Exception as e: print(_('FAILED: ')+str(e))
 
 	print(_('Creating services...'))
 	try:
 		fo = open('/etc/systemd/system/openplotter-i2c-read.service', "w")
-		fo.write( '[Service]\nEnvironment=OPrescue=0\nEnvironmentFile=/boot/firmware/config.txt\nExecStart=openplotter-i2c-read $OPrescue\nUser='+conf2.user+'\nRestart=always\nRestartSec=3\n\n[Install]\nWantedBy=local-fs.target')
+		fo.write( '[Service]\nEnvironment="OPrescue=0" "LG_WD=/tmp"\nEnvironmentFile=/boot/firmware/config.txt\nExecStart=openplotter-i2c-read $OPrescue\nUser='+conf2.user+'\nRestart=always\nRestartSec=3\n\n[Install]\nWantedBy=local-fs.target')
 		fo.close()
 		subprocess.call(['systemctl', 'daemon-reload'])
 		print(_('DONE'))
