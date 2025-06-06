@@ -27,6 +27,13 @@ jobs:
       with:
         fetch-depth: 0
     
+    - name: Get version from version.py
+      id: get_version
+      run: |
+        VERSION=$(grep "version = " openplotterI2c/version.py | cut -d"'" -f2)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "Version: $VERSION"
+    
     - name: Build Debian package
       run: |
         # Build the Debian package
@@ -40,6 +47,6 @@ jobs:
     - name: Upload Debian package
       uses: actions/upload-artifact@v4
       with:
-        name: openplotter-i2c
+        name: openplotter-i2c-v${{ env.VERSION }}
         path: artifacts/
     
